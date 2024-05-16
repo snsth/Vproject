@@ -1,0 +1,90 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEditor.Rendering;
+using UnityEngine;
+
+public class Player : MonoBehaviour
+{
+    // Start is called before the first frame update
+    public float speed;
+    float hAxis;
+    float vAxis;
+    bool wDown;
+    bool jDown;
+
+    bool isJump; //무한 점프를 막기위한 제약
+    bool isDodge;
+    Vector3 moveVec;
+
+    Rigidbody rigid;
+    Animator anim;
+    
+    void Awake()
+    {
+        rigid = GetComponent<Rigidbody>();
+        anim = GetComponentInChildren<Animator>();
+    }
+
+    // Update is called once per frame
+    void Update()
+    {
+        GetInput();
+        Move();
+        Turn();
+        Jump();
+        Dodge();
+    }
+    void GetInput()
+    {
+        hAxis = Input.GetAxisRaw("Horizontal");
+        vAxis = Input.GetAxisRaw("Vertical");
+        wDown = Input.GetButton("Walk");
+        jDown = Input.GetButtonDown("Jump"); //누르자마자 점프하기 위해 GetButtonDown
+    }
+    void Move()
+    {
+        moveVec = new Vector3(hAxis, 0, vAxis).normalized;
+
+        if (wDown)
+            transform.position += moveVec * speed * 0.3f * Time.deltaTime;
+        else
+            transform.position += moveVec * speed * Time.deltaTime;
+
+        anim.SetBool("isRun", moveVec != Vector3.zero);
+        anim.SetBool("isWalk", wDown);
+    }
+    void Turn()
+    {
+        transform.LookAt(transform.position + moveVec);
+    }
+    void Jump()
+    {
+        if (jDown && !isJump) //isjump가 false여야만 아래 문장이 실행되므로 '!'를 추가, 점프키를 눌렀고, isJump가 false일때 실행한다
+        {
+            rigid.AddForce(Vector3.up * 15, ForceMode.Impulse);
+            anim.SetBool("isJump", true);
+            anim.SetTrigger("doJump");
+            isJump = true;
+        }
+    }
+
+    void Dodge()
+    {
+        if (jDown && !isJump) //isjump가 false여야만 아래 문장이 실행되므로 '!'를 추가, 점프키를 눌렀고, isJump가 false일때 실행한다
+        {
+            rigid.AddForce(Vector3.up * 15, ForceMode.Impulse);
+            anim.SetBool("isJump", true);
+            anim.SetTrigger("doJump");
+            isJump = true;
+        }
+    }
+    void OnCollisionEnter(Collision collision) //바닥에 닿였을때 isJump값을 false로 바꾸기 위한 문장(충돌)
+    {
+        if(collision.gameObject.tag == "Floor")
+        {
+            anim.SetBool("isJump", false);
+            isJump = false;
+        }
+    }
+}
+
