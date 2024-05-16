@@ -14,11 +14,13 @@ public class Player : MonoBehaviour
 
     bool isJump; //무한 점프를 막기위한 제약
     bool isDodge;
+
     Vector3 moveVec;
+    Vector3 dodgeVec;
 
     Rigidbody rigid;
     Animator anim;
-    
+
     void Awake()
     {
         rigid = GetComponent<Rigidbody>();
@@ -45,6 +47,9 @@ public class Player : MonoBehaviour
     {
         moveVec = new Vector3(hAxis, 0, vAxis).normalized;
 
+        if (isDodge)
+            moveVec = dodgeVec;
+
         if (wDown)
             transform.position += moveVec * speed * 0.3f * Time.deltaTime;
         else
@@ -59,7 +64,7 @@ public class Player : MonoBehaviour
     }
     void Jump()
     {
-        if (jDown && !isJump) //isjump가 false여야만 아래 문장이 실행되므로 '!'를 추가, 점프키를 눌렀고, isJump가 false일때 실행한다
+        if (jDown && moveVec == Vector3.zero && !isJump && !isDodge) //isjump가 false여야만 아래 문장이 실행되므로 '!'를 추가, 점프키를 눌렀고, isJump가 false일때 실행한다
         {
             rigid.AddForce(Vector3.up * 15, ForceMode.Impulse);
             anim.SetBool("isJump", true);
@@ -68,19 +73,29 @@ public class Player : MonoBehaviour
         }
     }
 
+
     void Dodge()
     {
-        if (jDown && !isJump) //isjump가 false여야만 아래 문장이 실행되므로 '!'를 추가, 점프키를 눌렀고, isJump가 false일때 실행한다
+        if (jDown && moveVec != Vector3.zero && !isJump && !isDodge) //isjump가 false여야만 아래 문장이 실행되므로 '!'를 추가, 점프키를 눌렀고, isJump가 false일때 실행한다
         {
-            rigid.AddForce(Vector3.up * 15, ForceMode.Impulse);
-            anim.SetBool("isJump", true);
-            anim.SetTrigger("doJump");
-            isJump = true;
+            dodgeVec = moveVec; 
+            speed *= 2;
+            anim.SetTrigger("doDodge");
+            isDodge = true;
+
+            Invoke("DodgeOut", 0.4f);
         }
     }
+
+    void DodgeOut()
+    {
+        speed *= 0.5f;
+        isDodge = false;
+    }
+
     void OnCollisionEnter(Collision collision) //바닥에 닿였을때 isJump값을 false로 바꾸기 위한 문장(충돌)
     {
-        if(collision.gameObject.tag == "Floor")
+        if (collision.gameObject.tag == "Floor")
         {
             anim.SetBool("isJump", false);
             isJump = false;
