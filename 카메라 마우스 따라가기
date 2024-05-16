@@ -1,0 +1,65 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class Cameramove : MonoBehaviour
+{
+    public Transform Object_To_Follow;      // 따라가야할 오브젝트
+    public float followSpeed = 10f;         // 따라가는 속도
+    public float sensitivity = 100f;        // 마우스 감도
+    public float clampAngle = 50f;          // 카메라의 상하 각도
+
+    private float rotX;     // 마우스 X값
+    private float rotY;     // 마우스 Y값
+
+    // 카메라 위치 계산
+    public Transform realCamera;    // 카메라의 정보
+    public Vector3 dirNormalized;   // Vector3는 카메라의 방향과 크기 모두 가지고 잇는데 dirNomalized하면 크기는 제외
+    public Vector3 finalDir;        // 최종적으로 계산후 저장할 Vector 값
+
+    // 플레이어와 카메라 사이에 장애물이 있을경우 카메라 거리 조정
+    public float minDistance;       // 최소거리
+    public float maxDistance;       // 최대거리
+    public float finalDistance;     // 최종적으로 결정된 거리
+    public float smoothness = 10f;
+
+
+    // Start is called before the first frame update
+    void Start()
+    {
+        rotX = transform.localRotation.eulerAngles.x;
+        rotY = transform.localRotation.eulerAngles.y;
+
+        dirNormalized = realCamera.localPosition.normalized;        // 크기가 0으로 되어서 방향만 저장
+        finalDistance = realCamera.localPosition.magnitude;         // 
+    }
+
+    // Update is called once per frame
+    void Update()
+    {
+        rotX += -(Input.GetAxis("Mouse Y")) * sensitivity * Time.deltaTime;
+        rotY += Input.GetAxis("Mouse X") * sensitivity * Time.deltaTime;
+
+        rotX = Mathf.Clamp(rotX, -clampAngle, clampAngle);
+        Quaternion rot = Quaternion.Euler(rotX, rotY, 0);
+        transform.rotation = rot;
+    }
+    private void LateUpdate()
+    {
+        transform.position = Vector3.MoveTowards(transform.position, Object_To_Follow.position, followSpeed * Time.deltaTime);
+
+        finalDir = transform.TransformPoint(dirNormalized * maxDistance);
+
+        RaycastHit hit;
+
+        if(Physics.Linecast(transform.position, finalDir, out hit))
+        {
+            finalDistance = Mathf.Clamp(hit.distance, minDistance, maxDistance);
+        }
+        else
+        {
+            finalDistance = maxDistance;
+        }
+        realCamera.localPosition = Vector3.Lerp(realCamera.localPosition, dirNormalized * finalDistance, Time.deltaTime * smoothness);
+    }
+}
